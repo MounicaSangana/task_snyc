@@ -34,10 +34,11 @@
 #           text: "⚠️ Security vulnerabilities found in ${{ github.repository }}!"
 #           webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}/
 
-name: Snyk Security Scan
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
 
 jobs:
@@ -46,15 +47,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/python@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=low
-          
-      - name: Upload results to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: snyk.sarif
