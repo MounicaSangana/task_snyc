@@ -62,15 +62,54 @@
 #           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 #         with:
 #           args: --severity-threshold=low/
+############################################################################################################
+# name: Snyk Security Scan and Monitor
 
-name: Snyk Security Scan and Monitor
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
 
+# jobs:
+#   security:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v3
+      
+#       - name: Set up Python
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: '3.9'
+      
+#       - name: Install dependencies
+#         run: |
+#           pip install -r requirements.txt
+      
+#       - name: Run Snyk to check for vulnerabilities
+#         uses: snyk/actions/python@master
+#         continue-on-error: true  # Don't fail the workflow
+#         env:
+#           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+#         with:
+#           args: --severity-threshold=low
+      
+#       - name: Monitor project with Snyk
+#         uses: snyk/actions/python@master
+#         env:
+#           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+#         with:
+#           command: monitor
+#           args: --project-name="task-snyc"
+
+#################################################
+
+name: Snyk Complete Security Scan
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
   security:
     runs-on: ubuntu-latest
@@ -87,8 +126,9 @@ jobs:
           pip install -r requirements.txt
       
       - name: Run Snyk to check for vulnerabilities
+        id: snyk-test
         uses: snyk/actions/python@master
-        continue-on-error: true  # Don't fail the workflow
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -100,4 +140,25 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: monitor
-          args: --project-name="task-snyc"
+          args: --project-name="${{ github.repository }}"
+      
+      - name: Check for hardcoded secrets
+        id: snyk-code
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: code test
+      
+      - name: Send Slack notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "Snyk scan completed for tasksynk on branch main"
+            }
