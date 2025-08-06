@@ -1,2 +1,2 @@
 # task_snyc
-To integrate with snyc and run a python script.
+To integrate with snyc and run a python script for.
